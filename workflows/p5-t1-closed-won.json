@@ -1,0 +1,9 @@
+﻿{
+  "name": "P5 T1-T6 - Closed-Won + Tavily + Hunter/ZB gate + HubSpot + Slack",
+  "workflowId": "RIhpPf9paOwX2sNs",
+  "active": true,
+  "url": "https://n8n-production-c12e4.up.railway.app/workflow/RIhpPf9paOwX2sNs",
+  "nodes": 33,
+  "t6": "Slack Lookalike Summary (yBBpAHvSTmcx1x3w #all-fafo) after Associate -> Respond Synced, onError continue. Live T6TEST synced 90 + Slack success exec 366.",
+  "credentials_scrubbed": true
+}
