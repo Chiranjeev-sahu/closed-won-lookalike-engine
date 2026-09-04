@@ -1,8 +1,8 @@
-# Closed-Won Lookalike Engine
+# 🎯 Closed-Won Lookalike Engine
 
-HubSpot deal hits Closed-Won, lookalike pipeline builds itself — free-tier only, no Clay, no custom backend.
+Closed-Won lookalike engine built with n8n and Tavily that turns one won deal into 5-10 scored lookalike accounts with verified emails in HubSpot.
 
-## Project Overview
+## 🎯 Project Overview
 
 Sales teams close a deal and then manually hunt for similar companies. That list is slow, biased, and never makes it back into the CRM as a system.
 
@@ -10,7 +10,7 @@ This automation solves that by watching HubSpot for a Closed-Won deal, extractin
 
 Only accounts with valid verified email and lookalike_score >=50 enter the pipeline.
 
-## The Problem
+## 🚨 The Problem
 
 Without an automated engine:
 
@@ -21,7 +21,7 @@ Without an automated engine:
 - No pipeline to track lookalike conversion
 - Sales gets no Slack context (source deal, tier, score)
 
-## The Solution
+## 💡 The Solution
 
 This n8n workflow automatically:
 
@@ -37,36 +37,39 @@ This n8n workflow automatically:
 6. HubSpot dedup: Search Company by domain -> Prepare Upsert (standard props only to avoid 400) -> Upsert Company -> Search Contact by email -> Upsert Contact -> Associate -> Respond HubSpot Synced
 7. Slack summary to #all-fafo (C0BN1L6KDBR, #gtm-lookalikes fallback) — text mode, onError continueRegularOutput so 429 never blocks HubSpot
 
-## Workflow
+## 🔧 Workflow
 
-HubSpot Closed-Won webhook
-      -> Firmographic Extract (minimax)
-      -> Tavily Search Lookalikes (5-10)
-      -> Extract First Lookalike
-      -> Hunter Domain Search -> Select Best Person
-      -> ZeroBounce Verify -> Valid?
-           YES          NO
-            |            |
-         Score 0-100   Quarantine
-            |
-      HubSpot Company+Contact+Deal (Target Lookalikes)
-            |
-      Slack Summary (#all-fafo)
+```mermaid
+graph TD
+    A[HubSpot Closed-Won<br>webhook] --> B[Firmographic Extract<br>minimax]
+    B --> C[Tavily Search<br>5-10 Lookalikes]
+    C --> D[Extract First Lookalike]
+    D --> E[Hunter Domain Search<br>limit 10]
+    E --> F{Found?}
+    F -- No --> G[Prospeo<br>via LinkedIn URL]
+    F -- Yes --> H[ZeroBounce Verify<br>api-us]
+    G --> H
+    H --> I{Valid?}
+    I -- No --> J[Quarantine<br>email_not_valid]
+    I -- Yes --> K[Score 0-100<br>30+25+20+15+10]
+    K --> L[HubSpot<br>Company+Contact+Deal<br>Target Lookalikes]
+    L --> M[Slack Summary<br>#all-fafo]
+```
 
-## Technologies Used
+## 🛠️ Technologies Used
 
-- n8n — 33 nodes, workflow RIhpPf9paOwX2sNs (live on Railway)
-- OpenRouter minimax/m3:free — Firmographic extraction
-- Tavily — Lookalike company search + parse (primary, free tier)
-- Apollo — People search (fallback, unlimited free but mixed_companies blocked on free)
-- Hunter — Domain search (50/mo)
-- Prospeo — LinkedIn URL email fallback (429 handled)
-- Dropcontact — Enrichment fallback
-- ZeroBounce — Verify (api-us endpoint, 100 free)
-- HubSpot — Sandbox 247137733, Target Lookalikes pipeline, Company+Contact+Deal
-- Slack — Summary card (slackApi, text mode)
+- **n8n** — 33 nodes, workflow RIhpPf9paOwX2sNs (live on Railway)
+- **OpenRouter minimax/m3:free** — Firmographic extraction
+- **Tavily** — Lookalike company search + parse (primary, free tier)
+- **Apollo** — People search (fallback, unlimited free but mixed_companies blocked on free)
+- **Hunter** — Domain search (50/mo)
+- **Prospeo** — LinkedIn URL email fallback (429 handled)
+- **Dropcontact** — Enrichment fallback
+- **ZeroBounce** — Verify (api-us endpoint, 100 free)
+- **HubSpot** — Sandbox 247137733, Target Lookalikes pipeline, Company+Contact+Deal
+- **Slack** — Summary card (slackApi, text mode)
 
-## HubSpot Fields
+## 📋 HubSpot Fields
 
 Company: name, domain
 Deal (Target Lookalikes): lookalike_score, source_deal_id, lookalike_tier, enrichment_status, plus standard dealstage
@@ -74,9 +77,9 @@ Contact: email, name, lookalike_score reference
 
 Scoring gates are strict; everything else quarantined with reason.
 
-## Example Output
+## ✉️ Example Output
 
-```
+```json
 {
   "industry": "511210",
   "headcount": 120,
@@ -92,28 +95,20 @@ Scoring gates are strict; everything else quarantined with reason.
 
 Quarantine: `quarantined: true, reason: email_not_valid`
 
-## Follow-Up Logic
+## 🔁 Follow-Up Logic
 
 - Apollo 403 or 0 results -> widen filters (+-40%, parent NAICS) up to 2 rounds else log no_results and use fallback seed.
 - Duplicate domain -> update-in-place, no duplicate Company.
 - Invalid/catch-all -> quarantined, zero CRM writes.
 - ZeroBounce 1020 on Railway -> use api-us.zerobounce.net.
 
-## Example Scenario
+## 📊 Example Scenario
 
 Deal linear.app closes Won with Software/120/HubSpot/US -> Tavily finds 5 lookalikes -> notion.so extracted -> Hunter finds d.okonkwo@notion.so (conf 84) -> ZeroBounce invalid -> quarantined. Next run linear.app first -> Hunter conor@linear.app valid -> score 90 -> Company+Contact created -> Deal in Target Lookalikes -> Slack posted (exec 366).
 
-## Demo
+## 📈 Benefits
 
-- Closed-Won webhook (firmographics_ready 0.95)
-- Tavily lookalikes (5) + Hunter (10 candidates) + ZeroBounce
-- Scoring (90 immediate)
-- HubSpot synced + Slack posted
-- Quarantine path (invalid does_not_accept_mail)
-
-Add Loom + screenshots here.
-
-## Benefits
+This automation helps businesses:
 
 - Turns one Closed-Won into 5-10 pipeline accounts systematically
 - Cheap-first waterfall protects free-tier credits
@@ -121,22 +116,27 @@ Add Loom + screenshots here.
 - Idempotent dedup (exact domain/email)
 - Slack top-3 + Review in HubSpot + qualify/disqualify callbacks deferred to polish
 
-## Security
+## 🔐 Security
 
 Never upload credentials. HubSpot Service Key, OpenRouter, Tavily bearer, Hunter, Prospeo, Dropcontact, ZeroBounce, Slack bot tokens live in n8n only. Export workflows/p5-final-closed-won-lookalike.json scrubbed.
 
-## Possible Improvements
+## 🚀 Possible Improvements
 
 - Add Apollo company search when paid tier available
 - Add Block Kit + callback buttons for sales to qualify/disqualify
 - Add pagination + 100-item chunking for >100 lookalikes
 - Add analytics per source deal
 
-## Project Status
+## 📌 Project Status
 
-Completed — Demo / Portfolio Version — Live workflow 33 nodes, tested synced (score 90) + quarantine paths. Custom props + Block Kit deferred to polish.
+Completed — Demo / Portfolio Version
 
-## Author
+Live workflow 33 nodes, tested synced (score 90) + quarantine paths. Custom props + Block Kit deferred to polish.
 
-Chiranjeev Sahu — GTM Engineering
-Skills Demonstrated: n8n HubSpot Tavily Apollo Hunter ZeroBounce Scoring GTM Expansion
+## 👤 Author
+
+**Chiranjeev Sahu** — GTM Engineering
+
+Skills Demonstrated
+
+`n8n` `HubSpot` `Tavily` `Apollo` `Hunter` `ZeroBounce` `Scoring` `GTM Expansion`
